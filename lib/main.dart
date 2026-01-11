@@ -1,68 +1,89 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(
-    MaterialApp(
-      home: SafeArea(
-        child: Scaffold(
-          body: Center(child: MyWidget()),
-          // appBar: AppBar(
-          //   backgroundColor: Colors.red,
-          //   title: const Text('Tự học flutter'),
-          // ),
-          // body: const Center(
-          //     child: Text('Hello world')
-          // ),
-        ),
-      ),
-      debugShowCheckedModeBanner: false,
-    ),
-  );
+  runApp(const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: HomePage(),
+  ));
 }
 
-class MyWidget extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  bool loading = true;
+  String message = 'Đang gọi API...';
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchFromBE();
+  }
+
+  Future<void> fetchFromBE() async {
+    try {
+      // Android Emulator gọi Spring Boot local (máy tính) qua 10.0.2.2
+      final url = Uri.parse('http://10.0.2.2:8080/api/test/hello');
+
+      final res = await http.get(url);
+
+      if (res.statusCode == 200) {
+        final json = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() {
+          message = (json['message'] ?? '').toString();
+          loading = false;
+        });
+      } else {
+        setState(() {
+          error = 'HTTP ${res.statusCode}: ${res.body}';
+          loading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        error = 'Lỗi mạng: $e';
+        loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: const Text(
-          'Dự án giải pháp phần mềm chuyển đổi số cho các shop spa'
-              ' thú cưng và người nuôi thú cưng ứng dụng AI, chatBot vào để tư vấn sức '
-              'khỏe cho thú cưng dựa trên từng chỉ số, thông tin của thú cưng'),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Flutter ↔ Spring Boot')),
+        body: Center(
+          child: loading
+              ? const CircularProgressIndicator()
+              : (error != null
+              ? Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(error!, textAlign: TextAlign.center),
+          )
+              : Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(message, textAlign: TextAlign.center),
+          )),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            setState(() {
+              loading = true;
+              error = null;
+              message = 'Đang gọi API...';
+            });
+            fetchFromBE();
+          },
+          child: const Icon(Icons.refresh),
+        ),
+      ),
     );
   }
 }
-
-// class MyWidget2 extends StatefulWidget {
-//   final bool loading;
-//
-//   MyWidget2(this.loading);
-//
-//   @override
-//   State<StatefulWidget> createState() {
-//     return MyWidget2State();
-//   }
-// }
-
-// class MyWidget2State extends State<MyWidget2> {
-//   late bool _localLoading;
-//
-//   // chạy khi MyWidget2 được gọi và chạy trước build
-//   @override
-//   void initState() {
-//     _localLoading = widget.loading;
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     // widget laf 1 instance của MyWidget2
-//     return _localLoading
-//         ? const CircularProgressIndicator()
-//         : FloatingActionButton(onPressed: onClickButton);
-//   }
-//
-//   void onClickButton() {
-//     setState(() {
-//       _localLoading = true;
-//     });
-//   }
-// }
